@@ -2,8 +2,9 @@
 # build.sh — Build the wandb_client project and run all tests.
 #
 # Usage:
-#   ./build.sh            # Configure (if needed), build, and run tests
-#   ./build.sh --clean    # Wipe the build directory first, then build and run
+#   ./build.sh                # Configure, build, and run unit tests
+#   ./build.sh --clean        # Wipe the build directory first, then build and test
+#   ./build.sh --integration  # Build and run only integration tests (requires API key)
 #
 # Exit codes:
 #   0  — all tests passed
@@ -40,10 +41,14 @@ die() {
 # Option parsing
 # ---------------------------------------------------------------------------
 CLEAN=false
+INTEGRATION=false
 for arg in "$@"; do
     case "$arg" in
         --clean|-c)
             CLEAN=true
+            ;;
+        --integration)
+            INTEGRATION=true
             ;;
         --help|-h)
             grep '^#' "$0" | sed 's/^# \?//'
@@ -91,11 +96,22 @@ cmake --build "${BUILD_DIR}" --parallel "${JOBS}" \
 # ---------------------------------------------------------------------------
 # Test
 # ---------------------------------------------------------------------------
-print_header "Running tests (CTest)"
-ctest \
-    --test-dir "${BUILD_DIR}" \
-    --output-on-failure \
-    --parallel "${JOBS}" \
-    || die "One or more tests failed."
-
-print_header "SUCCESS — all tests passed"
+if [[ "$INTEGRATION" == true ]]; then
+    print_header "Running integration tests (CTest)"
+    ctest \
+        --test-dir "${BUILD_DIR}" \
+        --output-on-failure \
+        --parallel "${JOBS}" \
+        -L integration \
+        || die "One or more integration tests failed."
+    print_header "SUCCESS — all integration tests passed"
+else
+    print_header "Running unit tests (CTest)"
+    ctest \
+        --test-dir "${BUILD_DIR}" \
+        --output-on-failure \
+        --parallel "${JOBS}" \
+        --label-exclude integration \
+        || die "One or more unit tests failed."
+    print_header "SUCCESS — all unit tests passed"
+fi

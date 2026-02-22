@@ -12,8 +12,14 @@ function(wandb_add_test TEST_NAME TEST_SOURCE)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
     set_tests_properties(${TEST_NAME} PROPERTIES
         ENVIRONMENT "WANDB_MODE=offline"
+        LABELS "unit"
     )
 endfunction()
 
-# -- Test targets --
+# -- Unit test targets --
 wandb_add_test(test_py_runtime test_py_runtime.cc)
+wandb_add_test(test_config test_config.cc)
+wandb_add_test(test_run test_run.cc)
+
+# -- Integration tests (separate subdirectory) --
+add_subdirectory(integration)
