@@ -47,20 +47,20 @@
 
 ## Phase 3: Metrics & System Monitoring
 
-**Goal**: C++ code can collect and log system utilization metrics alongside training metrics.
+**Goal**: C++ code can configure wandb's native system monitoring and measure code-section latencies.
 
 ### Features
+- [ ] `RunConfig::stats_sampling_interval` — expose `wandb.Settings(x_stats_sampling_interval=...)` to tune native CPU/GPU/memory sampling rate (default 15s)
 - [ ] `include/wandb_client/metrics.h` / `src/metrics.cc`
-  - `TrainingTimer` — RAII timer that logs elapsed time
-  - `SystemMetrics` struct + `collect_system_metrics()` via Python `psutil`/`pynvml`
-  - `SystemMonitor` — background thread logging system metrics at configurable interval
-- [ ] `tests/test_metrics.cc` — timer accuracy, system metric collection, monitor start/stop
+  - `TrainingTimer` — RAII scoped timer that measures wall-clock elapsed time and logs duration via `run.log()`
+- [ ] `tests/test_metrics.cc` — timer accuracy, integration with `run.log()`
+- [ ] *(Optional / Future)* `ScopedTrace` — hierarchical span tree for nested code profiling with per-span latency logging
 
 ### Exit Criteria
 1. All metrics tests pass
-2. `TrainingTimer` logs wall-clock duration to within ±50ms accuracy
-3. `collect_system_metrics()` returns non-zero CPU% on any machine
-4. `SystemMonitor` background thread starts, logs ≥2 data points, and stops cleanly
+2. `stats_sampling_interval` is forwarded to `wandb.init(settings=...)` correctly
+3. `TrainingTimer` logs wall-clock duration to within ±50ms accuracy
+4. Native system metrics (CPU/GPU) appear in the wandb dashboard "System" tab
 
 ---
 
