@@ -20,6 +20,7 @@ endfunction()
 wandb_add_test(test_py_runtime test_py_runtime.cc)
 wandb_add_test(test_config test_config.cc)
 wandb_add_test(test_run test_run.cc)
+wandb_add_test(test_metrics test_metrics.cc)
 
 # -- Integration tests (separate subdirectory) --
 add_subdirectory(integration)

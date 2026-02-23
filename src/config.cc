@@ -42,6 +42,14 @@ py::dict config_to_py_dict(const RunConfig &cfg) {
     kwargs["config"] = py_config;
   }
 
+  // Build a wandb.Settings object if any settings fields are specified.
+  if (cfg.stats_sampling_interval > 0.0) {
+    py::object wandb_mod = py::module_::import("wandb");
+    py::object settings = wandb_mod.attr("Settings")(
+        py::arg("x_stats_sampling_interval") = cfg.stats_sampling_interval);
+    kwargs["settings"] = settings;
+  }
+
   return kwargs;
 }
 

@@ -3,6 +3,7 @@ add_library(wandb_client STATIC
     py_runtime.cc
     config.cc
     run.cc
+    metrics.cc
 )
 
 target_include_directories(wandb_client

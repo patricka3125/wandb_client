@@ -25,6 +25,7 @@ TEST_F(ConfigTest, RunConfigDefaults) {
   EXPECT_TRUE(cfg.config.empty());
   EXPECT_TRUE(cfg.mode.empty());
   EXPECT_TRUE(cfg.dir.empty());
+  EXPECT_DOUBLE_EQ(cfg.stats_sampling_interval, 0.0);
 }
 
 // Verifies that RunConfig fields can be set and read back correctly.
@@ -126,6 +127,29 @@ TEST_F(ConfigTest, ConfigToPyDictOmitsEmpty) {
   EXPECT_FALSE(d.contains("config"));
   EXPECT_FALSE(d.contains("mode"));
   EXPECT_FALSE(d.contains("dir"));
+  EXPECT_FALSE(d.contains("settings"));
+}
+
+// Verifies that stats_sampling_interval produces a settings key in the dict.
+TEST_F(ConfigTest, ConfigToPyDictWithSettings) {
+  RunConfig cfg;
+  cfg.project = "settings-test";
+  cfg.stats_sampling_interval = 5.0;
+
+  py::dict d = config_to_py_dict(cfg);
+
+  EXPECT_TRUE(d.contains("settings"));
+}
+
+// Verifies that settings key is absent when stats_sampling_interval is 0.
+TEST_F(ConfigTest, ConfigToPyDictSettingsOmittedWhenZero) {
+  RunConfig cfg;
+  cfg.project = "no-settings";
+  cfg.stats_sampling_interval = 0.0;
+
+  py::dict d = config_to_py_dict(cfg);
+
+  EXPECT_FALSE(d.contains("settings"));
 }
 
 } // namespace

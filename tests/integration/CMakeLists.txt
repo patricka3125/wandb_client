@@ -19,3 +19,4 @@ endfunction()
 
 # -- Integration test targets --
 wandb_add_integration_test(test_run_online test_run_online.cc)
+wandb_add_integration_test(test_metrics_online test_metrics_online.cc)

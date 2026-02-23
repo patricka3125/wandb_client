@@ -50,6 +50,11 @@ struct RunConfig {
 
   /// Directory for local wandb run data. Empty = default (./wandb).
   std::string dir;
+
+  /// System metrics sampling interval in seconds.
+  /// Controls how often wandb samples CPU/GPU/memory utilization.
+  /// 0.0 = use wandb default (15s). Must be > 0 to take effect.
+  double stats_sampling_interval = 0.0;
 };
 
 /// Converts a RunConfig to a Python dict of keyword arguments for wandb.init().

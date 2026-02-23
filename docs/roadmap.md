@@ -4,7 +4,7 @@
 
 ---
 
-## Phase 1: Project Scaffolding & Build System
+## ~~Phase 1: Project Scaffolding & Build System~~
 
 **Goal**: Repository is buildable, venv with wandb SDK is set up, and a minimal "hello pybind11" target compiles and links.
 
@@ -27,7 +27,7 @@
 
 ---
 
-## Phase 2: Core Bridge — Run & Config
+## ~~Phase 2: Core Bridge — Run & Config~~
 
 **Goal**: C++ code can initialize a wandb run, log scalar metrics, set config/summary, and finish.
 
@@ -45,7 +45,26 @@
 
 ---
 
-## Phase 3: Artifacts
+## Phase 3: Metrics & System Monitoring
+
+**Goal**: C++ code can configure wandb's native system monitoring and measure code-section latencies.
+
+### Features
+- [ ] `RunConfig::stats_sampling_interval` — expose `wandb.Settings(x_stats_sampling_interval=...)` to tune native CPU/GPU/memory sampling rate (default 15s)
+- [ ] `include/wandb_client/metrics.h` / `src/metrics.cc`
+  - `TrainingTimer` — RAII scoped timer that measures wall-clock elapsed time and logs duration via `run.log()`
+- [ ] `tests/test_metrics.cc` — timer accuracy, integration with `run.log()`
+- [ ] *(Optional / Future)* `ScopedTrace` — hierarchical span tree for nested code profiling with per-span latency logging
+
+### Exit Criteria
+1. All metrics tests pass
+2. `stats_sampling_interval` is forwarded to `wandb.init(settings=...)` correctly
+3. `TrainingTimer` logs wall-clock duration to within ±50ms accuracy
+4. Native system metrics (CPU/GPU) appear in the wandb dashboard "System" tab
+
+---
+
+## Phase 4: Artifacts
 
 **Goal**: C++ code can create, populate, log, download, and manage artifacts (aliases, tags, TTL).
 
@@ -65,7 +84,7 @@
 
 ---
 
-## Phase 4: Registry & Public API
+## Phase 5: Registry & Public API
 
 **Goal**: C++ code can interact with the wandb model registry and query data via the Public API.
 
@@ -83,28 +102,7 @@
 2. `run.link_artifact()` succeeds (offline or mocked)
 3. `Api().artifact()` returns a valid `Artifact` object (requires live or mock)
 
----
-
-## Phase 5: Metrics & System Monitoring
-
-**Goal**: C++ code can collect and log system utilization metrics alongside training metrics.
-
-### Features
-- [ ] `include/wandb_client/metrics.h` / `src/metrics.cc`
-  - `TrainingTimer` — RAII timer that logs elapsed time
-  - `SystemMetrics` struct + `collect_system_metrics()` via Python `psutil`/`pynvml`
-  - `SystemMonitor` — background thread logging system metrics at configurable interval
-- [ ] `tests/test_metrics.cc` — timer accuracy, system metric collection, monitor start/stop
-
-### Exit Criteria
-1. All metrics tests pass
-2. `TrainingTimer` logs wall-clock duration to within ±50ms accuracy
-3. `collect_system_metrics()` returns non-zero CPU% on any machine
-4. `SystemMonitor` background thread starts, logs ≥2 data points, and stops cleanly
-
----
-
-## Phase 6: Integration Testing & Polish
+## ~~Phase 6: Integration Testing & Polish~~
 
 **Goal**: End-to-end validation against a live W&B account, documentation complete.
 
@@ -130,23 +128,22 @@
 gantt
     title Implementation Phases
     dateFormat  YYYY-MM-DD
-    section Scaffolding
-    Phase 1 - Scaffold & Build     :p1, 2026-02-23, 2d
+    section Completed
+    Phase 1 - Scaffold & Build     :done, p1, 2026-02-23, 2d
+    Phase 2 - Run & Config         :done, p2, after p1, 3d
+    Phase 6 - Integration & Polish :done, p6, after p2, 0d
     section Core
-    Phase 2 - Run & Config         :p2, after p1, 3d
-    Phase 3 - Artifacts            :p3, after p2, 2d
+    Phase 3 - Metrics & Monitoring :p5, after p6, 2d
     section Advanced
-    Phase 4 - Registry & API       :p4, after p3, 2d
-    Phase 5 - Metrics & Monitoring :p5, after p4, 2d
-    section Polish
-    Phase 6 - Integration & Polish :p6, after p5, 2d
+    Phase 4 - Artifacts            :p3, after p5, 2d
+    Phase 5 - Registry & API       :p4, after p3, 2d
 ```
 
 | Phase | Est. Duration | Cumulative |
 |---|---|---|
-| 1 — Scaffolding | 2 days | 2 days |
-| 2 — Run & Config | 3 days | 5 days |
-| 3 — Artifacts | 2 days | 7 days |
-| 4 — Registry & API | 2 days | 9 days |
-| 5 — Metrics | 2 days | 11 days |
-| 6 — Polish | 2 days | 13 days |
+| ~~1 — Scaffolding~~ | Done | Done |
+| ~~2 — Run & Config~~ | Done | Done |
+| 3 — Metrics | 2 days | 2 days |
+| 4 — Artifacts | 2 days | 4 days |
+| 5 — Registry & API | 2 days | 6 days |
+| ~~6 — Polish~~ | Done | Done |
