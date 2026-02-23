@@ -89,6 +89,7 @@ Configuration struct for `wandb.init()`. Fields map directly to `wandb.init()` k
 | `config` | `std::map<std::string, ConfigValue>` | No | Hyperparameters |
 | `mode` | `std::string` | No | `"online"`, `"offline"`, or `"disabled"` |
 | `dir` | `std::string` | No | Local data directory |
+| `stats_sampling_interval` | `double` | No | Native system metrics (CPU/GPU) sampling rate in seconds. 0.0 = use wandb default (15s). |
 
 `ConfigValue` is a `std::variant<int, double, bool, std::string>`.
 
@@ -109,8 +110,27 @@ Main interface for experiment tracking.
 | `update_config` | `void update_config(const std::map<std::string, ConfigValue>&)` | Update run config |
 | `finish` | `void finish()` | End the run (also called by destructor) |
 | `id` | `std::string id() const` | Unique run ID |
-| `name` | `std::string name() const` | Display name |
-| `url` | `std::string url() const` | Dashboard URL |
+| `name` | `std::string name() const` | Display name (empty in offline mode until synced) |
+| `url` | `std::string url() const` | Dashboard URL (empty in offline mode until synced) |
+
+### Metrics & System Monitoring
+
+WandB automatically collects basic system metrics like CPU percent, memory usage, disk IO, and GPU utilization. This native telemetry runs automatically in the background. You can adjust how often it samples hardware statistics by setting `cfg.stats_sampling_interval`.
+
+If you need to measure latencies of specific sections of your C++ code (for instance, the duration of an epoch or forward pass), you can use `TrainingTimer`.
+
+```cpp
+#include "wandb_client/metrics.h"
+```
+
+A RAII scoped timer that measures wall-clock elapsed time:
+
+| Method | Signature | Description |
+|---|---|---|
+| Constructor | `TrainingTimer(Run&, const std::string& label)` | Starts timer, `label` is the metric name |
+| Destructor | `~TrainingTimer()` | Computes elapsed time (ms) and logs it to `run.log()` |
+| `stop` | `void stop()` | Manually stop the timer and log immediately. Destructor becomes a no-op. |
+| `elapsed_ms` | `double elapsed_ms() const` | Current elapsed time |
 
 ---
 
@@ -131,6 +151,8 @@ int main() {
     wandb::RunConfig cfg;
     cfg.project = "my-ml-project";
     cfg.name = "experiment-1";
+    // Increase system monitoring frequency from 15s to 2s
+    cfg.stats_sampling_interval = 2.0;
     cfg.config["learning_rate"] = 0.001;
     cfg.config["batch_size"] = 32;
     cfg.config["epochs"] = 100;
@@ -140,11 +162,14 @@ int main() {
 
     // 5. Training loop
     for (int epoch = 0; epoch < 100; ++epoch) {
+        // Measure epoch latency using the TrainingTimer
+        wandb::TrainingTimer epoch_timer(run, "epoch_compute_ms");
+
         double loss = 1.0 / (epoch + 1);  // placeholder
         double acc = 1.0 - loss;
 
         run.log({{"loss", loss}, {"accuracy", acc}});
-    }
+    } // epoch_timer goes out of scope and logs epoch latency
 
     // 6. Record final metrics
     run.set_summary("best_accuracy", 0.99);
