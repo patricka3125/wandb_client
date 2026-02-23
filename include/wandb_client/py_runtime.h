@@ -2,6 +2,7 @@
 
 #include <pybind11/embed.h>
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -12,7 +13,7 @@ namespace wandb {
 
 /// Base exception for all wandb bridge errors.
 class WandbException : public std::runtime_error {
- public:
+public:
   using std::runtime_error::runtime_error;
 };
 
@@ -26,9 +27,9 @@ class WandbException : public std::runtime_error {
 /// The interpreter is configured to use the project-local venv so that
 /// `import wandb` resolves to the venv-installed package.
 class PyRuntime {
- public:
+public:
   /// Returns the singleton instance.
-  static PyRuntime& instance();
+  static PyRuntime &instance();
 
   /// Starts the embedded Python interpreter and configures the venv sys.path.
   /// Throws WandbException if the interpreter cannot start.
@@ -43,19 +44,22 @@ class PyRuntime {
   bool is_initialized() const;
 
   /// Imports a Python module by name, with caching. Requires GIL.
+  /// The caller must hold the GIL, as the returned py::object's lifetime
+  /// requires it (dec_ref on destruction).
   /// Throws WandbException if the import fails.
-  py::object import(const std::string& module);
+  py::object import(const std::string &module);
 
- private:
+private:
   PyRuntime() = default;
   ~PyRuntime();
 
-  PyRuntime(const PyRuntime&) = delete;
-  PyRuntime& operator=(const PyRuntime&) = delete;
+  PyRuntime(const PyRuntime &) = delete;
+  PyRuntime &operator=(const PyRuntime &) = delete;
 
   bool initialized_ = false;
   mutable std::mutex mutex_;
   std::unordered_map<std::string, py::object> module_cache_;
+  std::unique_ptr<py::gil_scoped_release> gil_release_;
 };
 
 /// RAII guard that acquires the Python GIL on construction and releases it
@@ -68,15 +72,15 @@ class PyRuntime {
 ///   }
 ///   // GIL released here
 class GILGuard {
- public:
+public:
   GILGuard();
   ~GILGuard();
 
- private:
-  GILGuard(const GILGuard&) = delete;
-  GILGuard& operator=(const GILGuard&) = delete;
+private:
+  GILGuard(const GILGuard &) = delete;
+  GILGuard &operator=(const GILGuard &) = delete;
 
   PyGILState_STATE state_;
 };
 
-}  // namespace wandb
+} // namespace wandb

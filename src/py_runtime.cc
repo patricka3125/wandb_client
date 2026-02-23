@@ -3,7 +3,6 @@
 #include <pybind11/embed.h>
 
 #include <filesystem>
-#include <sstream>
 #include <string>
 
 namespace wandb {
@@ -101,6 +100,9 @@ void PyRuntime::initialize() {
     // Non-fatal: venv might not exist yet, or sys.path mutation failed.
     // The user can still set PYTHONPATH manually.
   }
+
+  // Release the GIL so other threads can acquire it!
+  gil_release_ = std::make_unique<py::gil_scoped_release>();
 }
 
 void PyRuntime::finalize() {
@@ -108,6 +110,9 @@ void PyRuntime::finalize() {
   if (!initialized_) {
     return;
   }
+
+  // Re-acquire the GIL before cleaning up
+  gil_release_.reset();
 
   module_cache_.clear();
   py::finalize_interpreter();

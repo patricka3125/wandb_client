@@ -10,6 +10,10 @@ namespace wandb {
 /// RAII timer that measures wall-clock elapsed time for a code section
 /// and logs the duration (in milliseconds) to a wandb run.
 ///
+/// @warning The timer holds a reference to the Run object. The Run MUST
+///          outlive the TrainingTimer, otherwise the reference dangles and
+///          stop()/destructor behavior is undefined.
+///
 /// Usage:
 ///   {
 ///       TrainingTimer timer(run, "forward_pass_ms");

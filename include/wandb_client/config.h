@@ -1,13 +1,9 @@
 #pragma once
 
-#include <pybind11/embed.h>
-
 #include <map>
 #include <string>
 #include <variant>
 #include <vector>
-
-namespace py = pybind11;
 
 namespace wandb {
 
@@ -56,17 +52,5 @@ struct RunConfig {
   /// 0.0 = use wandb default (15s). Must be > 0 to take effect.
   double stats_sampling_interval = 0.0;
 };
-
-/// Converts a RunConfig to a Python dict of keyword arguments for wandb.init().
-///
-/// Only non-empty / non-default fields are included in the output dict.
-/// Requires the GIL to be held by the caller.
-py::dict config_to_py_dict(const RunConfig &cfg);
-
-/// Converts a ConfigValue variant to a py::object.
-///
-/// Maps int→int, double→float, bool→bool, string→str in Python.
-/// Requires the GIL to be held by the caller.
-py::object config_value_to_py(const ConfigValue &value);
 
 } // namespace wandb

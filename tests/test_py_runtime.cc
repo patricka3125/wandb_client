@@ -1,18 +1,17 @@
 #include "wandb_client/py_runtime.h"
 
+#include "test_helpers.h"
+
 #include <gtest/gtest.h>
 
 namespace wandb {
 namespace {
 
-// Test fixture that ensures the Python runtime is initialized once for all
-// tests in this file and finalized after all tests complete.
-class PyRuntimeTest : public ::testing::Test {
-protected:
-  static void SetUpTestSuite() { PyRuntime::instance().initialize(); }
+using testing::GILScopedFixture;
 
-  static void TearDownTestSuite() { PyRuntime::instance().finalize(); }
-};
+// Test fixture: inherits GILScopedFixture which initializes Python, and
+// acquires/releases the GIL per-test so py::object locals are safe.
+class PyRuntimeTest : public GILScopedFixture {};
 
 // Verifies that the interpreter reports as initialized after initialize().
 TEST_F(PyRuntimeTest, InterpreterInitializes) {

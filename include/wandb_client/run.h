@@ -2,14 +2,13 @@
 
 #include "wandb_client/config.h"
 
-#include <pybind11/embed.h>
-
 #include <map>
+#include <memory>
 #include <string>
 
-namespace py = pybind11;
-
 namespace wandb {
+
+struct RunState;
 
 /// C++ wrapper around a wandb Python Run object.
 ///
@@ -78,10 +77,9 @@ public:
 
 private:
   /// Private constructor — use Run::init() to create instances.
-  explicit Run(py::object run_obj);
+  explicit Run(std::unique_ptr<RunState> state);
 
-  py::object run_;
-  bool active_ = false;
+  std::unique_ptr<RunState> state_;
 };
 
 } // namespace wandb

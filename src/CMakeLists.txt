@@ -1,7 +1,6 @@
 # wandb_client static library
 add_library(wandb_client STATIC
     py_runtime.cc
-    config.cc
     run.cc
     metrics.cc
 )

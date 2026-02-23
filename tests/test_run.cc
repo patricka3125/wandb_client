@@ -1,10 +1,17 @@
 #include "wandb_client/py_runtime.h"
 #include "wandb_client/run.h"
 
+#include "test_helpers.h"
+
 #include <gtest/gtest.h>
+
+#include <thread>
+#include <vector>
 
 namespace wandb {
 namespace {
+
+using testing::make_offline_config;
 
 // Test fixture that initializes the Python runtime for all run tests.
 // WANDB_MODE=offline is set by CMake so these tests never hit the network.
@@ -14,14 +21,6 @@ protected:
 
   static void TearDownTestSuite() { PyRuntime::instance().finalize(); }
 };
-
-// Helper: creates a minimal RunConfig suitable for offline testing.
-RunConfig make_offline_config() {
-  RunConfig cfg;
-  cfg.project = "wandb_client_unit_test";
-  cfg.mode = "offline";
-  return cfg;
-}
 
 // Verifies that a run can be initialized and finished in offline mode.
 TEST_F(RunTest, RunInitAndFinish) {
@@ -48,7 +47,7 @@ TEST_F(RunTest, RunSetSummary) {
 
 // Verifies that updating config after init does not throw.
 TEST_F(RunTest, RunUpdateConfig) {
-  RunConfig cfg = make_offline_config();
+  auto cfg = make_offline_config();
   cfg.config["initial_lr"] = 0.01;
   auto run = Run::init(cfg);
   EXPECT_NO_THROW(run.update_config({{"added_key", std::string("value")}}));
@@ -69,6 +68,38 @@ TEST_F(RunTest, RunRAIIFinish) {
     run.log({{"step", 1.0}});
     // run goes out of scope — destructor should call finish()
   });
+}
+
+// Verifies multiple threads can log metrics rapidly and concurrently without
+// blocking or dropping, and that teardown happens cleanly.
+TEST_F(RunTest, RunAsyncLoggingMultiThreaded) {
+  auto run = Run::init(make_offline_config());
+
+  const int num_threads = 10;
+  const int logs_per_thread = 100;
+  std::vector<std::thread> threads;
+
+  for (int i = 0; i < num_threads; ++i) {
+    threads.emplace_back([&run, i]() {
+      for (int j = 0; j < logs_per_thread; ++j) {
+        run.log({{"thread_id", static_cast<double>(i)},
+                 {"step", static_cast<double>(j)}});
+      }
+    });
+  }
+
+  for (auto &t : threads) {
+    t.join();
+  }
+
+  EXPECT_NO_THROW(run.finish());
+}
+
+// Verifies that logging to a finished run throws WandbException.
+TEST_F(RunTest, RunLogAfterFinishThrows) {
+  auto run = Run::init(make_offline_config());
+  run.finish();
+  EXPECT_THROW(run.log({{"step", 1.0}}), WandbException);
 }
 
 } // namespace
